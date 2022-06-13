@@ -4,8 +4,8 @@ import os
 import struct
 from time import sleep
 import pythoncom
-import Tkinter as tk 
-import tkMessageBox 
+# import Tkinter as tk 
+# import tkMessageBox 
 def send(mId,lmsgs,msgs,pathname):
     destOrig = win32com.client.Dispatch("MSMQ.MSMQDestination")
     destResp = win32com.client.Dispatch("MSMQ.MSMQDestination")
@@ -13,8 +13,9 @@ def send(mId,lmsgs,msgs,pathname):
 
     res_computer_name = os.getenv('COMPUTERNAME')
 
-    pathname = res_computer_name+"\\PRIVATE$\\myqueue"
-    destOrig.Formatname = "direct=os:"+ pathname
+    pathname = "DESKTOP-BHA4C47"+"\\PRIVATE$\\myqueue"
+    pathname2 = "LAPTOP-V0FLQJNM"+"\\PRIVATE$\\myqueue"
+    destOrig.Formatname = "direct=os:"+ pathname2
     destResp.Formatname = "direct=os:"+ pathname
 
     msg.ResponseDestination = destResp
