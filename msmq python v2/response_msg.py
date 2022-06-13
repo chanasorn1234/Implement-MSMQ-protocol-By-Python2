@@ -5,99 +5,93 @@ import struct
 from time import sleep
 import pythoncom
 
-
-qinfo_id=win32com.client.Dispatch("MSMQ.MSMQQueueInfo")
-keepid = win32com.client.Dispatch("MSMQ.MSMQMessage")
-pre_id = win32com.client.Dispatch("MSMQ.MSMQQueue")
-
-
-computer_name = os.getenv('COMPUTERNAME')
-qinfo_id.FormatName="direct=os:"+computer_name+"\\PRIVATE$\\myqueue"
-pre_id = qinfo_id.Open(1,0)
-timeout_sec = 1.0
-keepid = pre_id.Receive()
-# print(type(keepid.Id[16:20]))
-# print(pre_id)
+def receive(pathname):
+    qinfo_id=win32com.client.Dispatch("MSMQ.MSMQQueueInfo")
+    keepid = win32com.client.Dispatch("MSMQ.MSMQMessage")
+    pre_id = win32com.client.Dispatch("MSMQ.MSMQQueue")
 
 
-res_destination = win32com.client.Dispatch("MSMQ.MSMQDestination")
-resmsg = win32com.client.Dispatch("MSMQ.MSMQMessage")
-res_computer_name = os.getenv('COMPUTERNAME')
+    computer_name = os.getenv('COMPUTERNAME')
+    pathname = computer_name+"\\PRIVATE$\\myqueue"
+    qinfo_id.FormatName="direct=os:"+pathname
+    pre_id = qinfo_id.Open(1,0)
+    timeout_sec = 1.0
+    keepid = pre_id.Receive()
+    # print(type(keepid.Id[16:20]))
+    # print(pre_id)
 
-res_destination = keepid.ResponseDestination
+    ############
+    if(keepid.Label == 'SetupTester'):
+        res_destination = win32com.client.Dispatch("MSMQ.MSMQDestination")
+        resmsg = win32com.client.Dispatch("MSMQ.MSMQMessage")
+        res_computer_name = os.getenv('COMPUTERNAME')
 
-if(res_destination != None):
+        res_destination = keepid.ResponseDestination
+        resmsg.Body = '<Root xmlns:dt="urn:schemas-microsoft-com:datatypes">'+\
+            '<Dictionary key="Top">'+\
+            '<V dt:dt="i4" key="ReturnCode">0</V>'+\
+            '<V dt:dt="string" key="ReturnText"></V>'+\
+            '<V dt:dt="string" key="ReturnDetails"></V>'+\
+            '<V dt:dt="string" key="SenderID">MTH-VM-B67871</V>'+\
+            '</Dictionary>'+\
+            '</Root>'
+        resmsg.Label = 'SetupTesterReply'
 
-    resmsg.Body = "KhunKob"
-    resmsg.Label = "ResTestMsg"
+        resmsg.CorrelationId = keepid.Id
+        
+        print(type(keepid.Id))
+        print(struct.unpack("<HH",resmsg.CorrelationId[16:20]),struct.unpack("<HH",keepid.Id[16:20]))
+        
+        resmsg.Send(res_destination)
+        res_destination.Close()
+        pre_id.Close()
 
-    resmsg.CorrelationId = keepid.Id
-    # print(keepid.Id[16:20].tobytes())
-    print(type(keepid.Id))
-    # print(keepid.Destination)
-    print(struct.unpack("<HH",resmsg.CorrelationId[16:20]),struct.unpack("<HH",keepid.Id[16:20]))
+    if(keepid.Label == 'SetupTester'):
+        res_destination = win32com.client.Dispatch("MSMQ.MSMQDestination")
+        resmsg = win32com.client.Dispatch("MSMQ.MSMQMessage")
+        res_computer_name = os.getenv('COMPUTERNAME')
 
+        res_destination = keepid.ResponseDestination
+        resmsg.Body = '<Root xmlns:dt="urn:schemas-microsoft-com:datatypes">'+\
+            '<Dictionary key="Top">'+\
+            '<V dt:dt="i4" key="ReturnCode">-1</V>'+\
+            '<V dt:dt="string" key="ReturnText">Program Not Loaded</V>'+\
+            '<V dt:dt="string" key="ReturnDetails"></V>'+\
+            '<V dt:dt="string" key="SetupTesterMsgID">{CDC5E747-EE4F-4A9A-A8E4-7F7F8709FAC4}\\23031291</V>'+\
+            '<V dt:dt="string" key="SenderID">MTH-VM-B67871</V>'+\
+            '</Dictionary>'+\
+            '</Root>'
+        resmsg.Label = 'SetupEnded'
 
-    resmsg.Send(res_destination)
-    res_destination.Close()
-    pre_id.Close()
+        resmsg.CorrelationId = keepid.Id
+        
+        print(type(keepid.Id))
+        print(struct.unpack("<HH",resmsg.CorrelationId[16:20]),struct.unpack("<HH",keepid.Id[16:20]))
+        
+        resmsg.Send(res_destination)
+        res_destination.Close()
+        pre_id.Close()
 
-else:
-    print("Request message type invalid")
+    ##############
+    if(res_destination == None):
+        res_destination = win32com.client.Dispatch("MSMQ.MSMQDestination")
+        resmsg = win32com.client.Dispatch("MSMQ.MSMQMessage")
+        res_computer_name = os.getenv('COMPUTERNAME')
 
+        res_destination = keepid.ResponseDestination
+        resmsg.Body = "KhunKob"
+        resmsg.Label = "ResTestMsg"
 
-
-
-
-
-
-
-
-
-
-
-
-
-# qinfo=win32com.client.Dispatch("MSMQ.MSMQQueueInfo")
-# computer_name = os.getenv('COMPUTERNAME')
-# qinfo.FormatName="direct=os:"+computer_name+"\\PRIVATE$\\myqueue"
-# queue=qinfo.Open(1,0)   # Open a ref to queue to read(1)
-# msg=queue.Receive()
-# print("Label:",msg.Label)
-# print("Body :",msg.Body)
-# print("ID:",str(msg.SourceMachineGuid))
-# print("ID2:",msg.LookupId)
-# print("Time:",msg.SentTime)
-# print(type(msg.Id))
-# result = msg.Id[16:20]
-# result2 = msg.SourceMachineGuid
-# # result = b'\x0f\xc8\x01\x00'
-
-# print(result,'')
-# print(result2,'')
-# result2 = result2.encode('utf_8')
-# print(result2)
-# num = struct.unpack('<HH',result)
-# message_num = 0
-# for i in num:
-#     message_num += i
-# print(message_num)
-# queue.Close()
-
-# # result = bytes(result)
-# # print(result)
-# # print(type(result))
-# # sleep(1)
-
-# frame = bytearray()
-# for i in range(0,20):
-#     frame.append(msg.Id[i])
-# print(frame)
-# print(len(frame))
+        resmsg.CorrelationId = keepid.Id
+        # print(keepid.Id[16:20].tobytes())
+        print(type(keepid.Id))
+        # print(keepid.Destination)
+        print(struct.unpack("<HH",resmsg.CorrelationId[16:20]),struct.unpack("<HH",keepid.Id[16:20]))
 
 
-# frame = bytearray()
-# for i in range(0,20):
-#     frame.append(keepid.Id[i])
+        resmsg.Send(res_destination)
+        res_destination.Close()
+        pre_id.Close()
 
-# print(frame)
+
+receive('')
