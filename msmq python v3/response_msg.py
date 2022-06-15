@@ -6,6 +6,7 @@ from time import sleep
 import pythoncom
 import platform
 
+info_SetupEndedReply = None
 def receive(pathname):
     qinfo_id=win32com.client.Dispatch("MSMQ.MSMQQueueInfo")
     keepid = win32com.client.Dispatch("MSMQ.MSMQMessage")
@@ -69,6 +70,33 @@ def receive(pathname):
         res_destination.Close()
         pre_id.Close()
 
+    if(keepid.Label == 'SetupEndedReply'):
+        # info_SetupEndedReply = keepid
+        print('receive SetupEndedReply')
+
+    if(keepid.Label == 'EndLot'):
+        res_destination = win32com.client.Dispatch("MSMQ.MSMQDestination")
+        resmsg = win32com.client.Dispatch("MSMQ.MSMQMessage")
+
+        res_destination = keepid.ResponseDestination
+        resmsg.Body = '<Root xmlns:dt="urn:schemas-microsoft-com:datatypes">'+\
+            '<Dictionary key="Top">'+\
+            '<V dt:dt="i4" key="ReturnCode">-1</V>'+\
+            '<V dt:dt="string" key="ReturnText"></V>'+\
+            '<V dt:dt="string" key="ReturnDetails"></V>'+\
+            '<V dt:dt="string" key="SenderID">'+hostname()+'</V>'+\
+            '</Dictionary>'+\
+            '</Root>'
+        resmsg.Label = 'EndLotReply'
+
+        resmsg.CorrelationId = keepid.Id
+        
+        print(type(keepid.Id))
+        print(struct.unpack("<HH",resmsg.CorrelationId[16:20]),struct.unpack("<HH",keepid.Id[16:20]))
+        
+        resmsg.Send(res_destination)
+        res_destination.Close()
+        pre_id.Close()
     ##############
     if(res_destination == None):
         res_destination = win32com.client.Dispatch("MSMQ.MSMQDestination")
@@ -115,6 +143,10 @@ while(1):
     check = pre_pre_id.peek(pythoncom.Empty, pythoncom.Empty, timeout_sec * 1000)
     if(check != None):
         if(check.Label == 'SetupTester'):
+            receive('')
+        elif(check.Label == 'SetupEndedReply'):
+            receive('')
+        elif(check.Label == 'EndLot'):
             receive('')
         else:
             sleep(5)
